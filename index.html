@@ -1,0 +1,4268 @@
+<style>
+  table,
+th,
+td {
+	border: 1px solid black;
+  border-collapse: collapse;
+  padding:5px;
+}
+
+tr:hover {
+	background-color: #60b6f7;
+	--font-weight: bold;
+	cursor: pointer;
+}
+
+
+th {
+	background-color: #ababab;
+}
+
+td div {
+	text-align: center;
+	overflow: hidden;
+	width: 80px;
+}
+
+.idTD,
+.typeTD {
+	text-align: center;
+	overflow: hidden;
+	width: 80px;
+}
+
+.nameTD,
+.nameDiv {
+	text-align: left;
+	width: 550px;
+}
+
+.nameDiv {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mainTable {
+	width: 900px;
+}
+
+.hiddenDiv {
+	display: none;
+}
+
+.typeDiv {
+	height: 20px;
+	width: 20px;
+	display: inline-block;
+	text-align: center;
+	vertical-align: middle;
+	border-radius: 50%;
+	color: #ffffff;
+	font-size: 12px;
+	font-family: MetricWeb-Regular, Calibri, sans-serif;
+}
+
+.typeSpan {
+	position: relative;
+	top: 2px;
+}
+
+.typeUSDiv {
+	background: #ffb000;
+}
+
+.typeQSDiv {
+	background: #33c180;
+}
+
+.typeFeatureDiv {
+	background: #e57828;
+}
+
+.typeDefectDiv {
+	background: #b21646;
+}
+.shortFilter {
+  width: 80px;
+}
+.longFilter {
+  width: 550px;
+}
+.textFilter {
+  text-align: center;
+  display: block;
+  border: 0.5px solid gray;
+}
+.selectFilter {
+  display: block;
+  border: 0.5px solid gray;
+}
+.shortSelectFilter {
+  width: 60px;
+}
+.tableHeader {
+  margin-bottom: 5px;
+}
+
+.groupByHeader{
+	background-color: #EBEBE8;
+	font-weight: bold;
+	border-radius: 50%;
+}
+.groupByDiv{
+  width: 100%;
+  text-align: left;
+}
+.panelDiv{
+  width: 1745px;
+  height: 2px;
+  border: 1px solid black;
+  --position: absolute;  
+  position: relative;
+  background-color: green;
+  bottom: 0px;
+  margin-top: 5px;
+}
+.dragBtn {
+  width: 50px;
+  height: 15px;
+  border: 1px solid black;
+  position: absolute;  
+  background-color: #C6C6C3;
+  top: -10px;
+  left: 855px;
+  text-align: center;
+  cursor: pointer;
+}
+.container {
+  position: relative;
+}
+</style>
+<script>
+  function trClicked(elem) {		
+  var table = document.getElementById('mainTable');	  for (var i = 1, row; row = table.rows[i]; i++) {			row.style['background-color'] = '';	  }		elem.style['background-color'] = '#0783e0';	  var hid = document.getElementById('hiddenDiv');	  hid.innerText = elem.cells[0].innerText;	}
+
+var filterList = {};
+
+function handleNewfilter(colNum, value, type) {
+  var input, filter;
+  if (type === 'text'){
+    input = document.getElementById(value);
+    filter = input.value.toUpperCase();
+    if(filter==='' || !filter){
+      delete(filterList[colNum]);
+    } else {
+      filterList[colNum] = filter;
+    }
+  }
+  else if (type === 'select'){
+    filter = value.toUpperCase();
+    if('[ALL]'.indexOf(filter) > -1){
+      delete(filterList[colNum]);
+    } else {
+      filterList[colNum] = filter;
+    }
+  }
+  refreshFilter();
+}
+
+function refreshFilter() {
+  var totalCount = 0;
+  var table = document.getElementById('mainTable');
+  tr = table.getElementsByTagName('tr');
+  for (i = 0; i < tr.length; i++) {
+    var shouldHide = false;
+    for (var key in filterList) {
+      if (!shouldHide) {
+        td = tr[i].getElementsByTagName('td')[key];
+        if (td) {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filterList[key]) < 0) {
+              shouldHide = true;
+          }
+        } 
+      }
+    }
+    if (!shouldHide) {
+      tr[i].style.display = '';
+      totalCount++;
+    } else {
+      tr[i].style.display = 'none';
+    }
+  }  
+  setTotalCount(totalCount);
+}
+
+function setTotalCount(totalCountVal) {
+  var totalCount = document.getElementById('totalCount');
+  if (totalCountVal) {
+    totalCount.textContent = 'Total Items: '+(totalCountVal-1);
+  } else {
+    var table = document.getElementById('mainTable');
+    totalCount.textContent = 'Total Items: '+(table.getElementsByTagName('tr').length-1);
+  }
+}
+
+function clearFilter(){
+  filterList = {};
+  refreshFilter();
+  var table = document.getElementById('mainTable');
+  var textFilter = table.getElementsByClassName('textFilter');
+  for (i = 0; i < textFilter.length; i++) {
+    textFilter[i].value = '';
+  }
+  var selectFilter = table.getElementsByClassName('selectFilter');
+  for (i = 0; i < selectFilter.length; i++) {
+    selectFilter[i].options.selectedIndex = 0;
+  }
+}
+
+function toggle(classToHide) {
+  var hide = document.getElementsByClassName(classToHide);
+  if (hide[0].style.display === 'none') {
+    hide[0].style.display = '';
+  } else {
+    hide[0].style.display= 'none';
+  }
+}
+
+function calcRowAmount(divId) {
+  console.log('aaa');
+  var rowCount = document.getElementsByClassName('firstDiv');
+  console.log(document.getElementById(divId));
+  document.getElementById(divId).text+=rowCount[0].getElementsByTagName('tr').length;
+}
+
+///////////////////////////////////////////////
+
+var cursorY, isMouseDown;
+function onMouseUpdate(e){  
+  cursorY = e.pageY;
+  if (isMouseDown){
+  document.getElementById('panelDiv').style.height = (document.getElementById('container').offsetHeight-cursorY)+'px';
+  }
+}
+document.addEventListener('mousemove', onMouseUpdate, false);
+function changeHeight(val) {
+      isMouseDown=val;
+}
+</script>
+<body onload='setTotalCount()'>
+  <div id='container' class='container' onmouseup='changeHeight(false);'>
+<div id='tableHeader' class='tableHeader'>
+  <input type='button' value='Clear Filters' onclick='clearFilter()'></input>
+  <span id='totalCount'>Total Items:</span>
+</div>
+<table id='mainTable' class='mainTable'>
+  <thead>
+   <tr>
+      <th>ID<input id='idFilter' type='text' onkeyup='handleNewfilter(0, this.id, "text")' class='textFilter shortFilter' placeholder='Filter'></th>
+      <th>Type
+        <select id='typeFilter' onchange='handleNewfilter(1, this.value, "select")' class='selectFilter shortSelectFilter'>
+          <option>[ALL]</option>
+          <option>US</option>
+          <option>QS</option>
+          <option>F</option>
+          <option>D</option>
+        <select>
+     </th>
+      <th class='nameTD'>Name<input id='NameFilter' type='text' oninput='handleNewfilter(2, this.id, "text")' class='textFilter longFilter' placeholder='Filter'></th>
+      <th>Phase</th>
+      <th>Severity</th>
+      <th>Owner</th>
+      <th>Story Points<input id='SPFilter' type='text' oninput='handleNewfilter(6, this.id, "text")' class='textFilter shortFilter' placeholder='Filter'></th>
+      <th>Milestone</th>
+      <th class='nameTD'>Parent<input id='ParentFilter' type='text' onkeyup='handleNewfilter(8, this.id, "text")' class='textFilter longFilter' placeholder='Filter'></th>
+   </tr>
+  </thead>
+  <tbody>
+  <tbody class="groupByHeader">
+			<tr>
+				<td colspan="9">
+          <div id='firstDiv' class='groupByDiv' onClick='toggle(this.id)' value='ohad'>Header11</div>
+				</td>
+			</tr>
+		</tbody>
+		<tbody class="firstDiv">
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>852013</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='only report creator should have access for download generated report'>only report creator should have access for download generated report</div>
+      </td>
+      <td>
+         <div>Ready for QA</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nadav Hames</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+        </div>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845122</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i want to select which fields to see in the reports'>As an admin i want to select which fields to see in the reports</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+</tbody>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>853058</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add experiment to show report configuration screen'>Add experiment to show report configuration screen</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875131</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as an admin i want to see the ' create document report' menu button only when i have a permission to generate report configuration'>as an admin i want to see the ' create document report' menu button only when i have a permission to generate report configuration</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>833069</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='add group by functionality [including multi value] to reporting mechanism'>add group by functionality [including multi value] to reporting mechanism</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>4</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787251 - [Document Report] Child level entities - Add child entities (1 level) in the report settings by selecting predefined relation'>787251 - [Document Report] Child level entities - Add child entities (1 level) in the report settings by selecting predefined relation</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>863069</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as an admin i want to set the order of the fields (by drag and drop) (content tab)'>as an admin i want to set the order of the fields (by drag and drop) (content tab)</div>
+      </td>
+      <td>
+         <div>Fixing Defects</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878001</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to add a file name and format to the report (Attribute tab)'>As an admin i would like to add a file name and format to the report (Attribute tab)</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>846125</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to add a summary, author and generated on date to the report (Attribute tab)'>As an admin i would like to add a summary, author and generated on date to the report (Attribute tab)</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>4</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings'>787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>853022</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Tech - Report configuration should be lazy loaded'>Tech - Report configuration should be lazy loaded</div>
+      </td>
+      <td>
+         <div>In Progress</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>854059</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[tech] reader module of report generator should calculate and retun the amount of entities'>[tech] reader module of report generator should calculate and retun the amount of entities</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Eli Emanuel</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>874080</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='support duplicate entities in report configuration'>support duplicate entities in report configuration</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>883015</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As a user I would like to have an option to define order by in generate report'>As a user I would like to have an option to define order by in generate report</div>
+      </td>
+      <td>
+         <div>In Progress</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>798056</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Create and productize report generator resource (should be implemented as public api resource)'>Create and productize report generator resource (should be implemented as public api resource)</div>
+      </td>
+      <td>
+         <div>Ready for QA</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878036</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as a user I would like to select the orientation of the report (portrait or landscape) - should be with icon'>as a user I would like to select the orientation of the report (portrait or landscape) - should be with icon</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877050</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as an admin i want fields dropdown will be multi value selection'>as an admin i want fields dropdown will be multi value selection</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845119</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i want define which entities to print (content tab)'>As an admin i want define which entities to print (content tab)</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>882017</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As a user I would like generate report UI header section text to be aligned with the tree text'>As a user I would like generate report UI header section text to be aligned with the tree text</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings'>787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877003</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as an admin i want to see error dialog when user exceeded fuses'>as an admin i want to see error dialog when user exceeded fuses</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>851017</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='add report configuration tree'>add report configuration tree</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881022</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='as an admin i want to save report configuration as template and load existing templates'>as an admin i want to save report configuration as template and load existing templates</div>
+      </td>
+      <td>
+         <div>In Progress</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>7</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>853057</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As a user i would  like to perform action on the printed entities (i.e. duplicate, delete, clear selected fields)'>As a user i would  like to perform action on the printed entities (i.e. duplicate, delete, clear selected fields)</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings'>787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>854058</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As a user i want to set the order of the entities to print'>As a user i want to set the order of the entities to print</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877140</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Warn user before modifying the release or milestone in a pipeline'>Warn user before modifying the release or milestone in a pipeline</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='877080 - Warn user before modifying the release or milestone in a pipeline'>877080 - Warn user before modifying the release or milestone in a pipeline</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878098</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='need to remove the generate report buttons from the grid toolbar'>need to remove the generate report buttons from the grid toolbar</div>
+      </td>
+      <td>
+         <div>Ready for R&D</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>882019</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an user I would like to title, summary, author and generated on date will be added as an open page to the generated report file'>As an user I would like to title, summary, author and generated on date will be added as an open page to the generated report file</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>4</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings'>787250 - [Document Report] Define format (word/pdf), header, footer, logo and OOTB placeholders in the report settings</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>883014</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Generate Report - UI - table / details toggle button should be with icons'>Generate Report - UI - table / details toggle button should be with icons</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>848180</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As a user i would like to generate report according to the settings'>As a user i would like to generate report according to the settings</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>798061</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='report configuration persistance managment - ui'>report configuration persistance managment - ui</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>7</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>798059</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Memory consumption of Aspose writer (prevent DOS) need to checked and take under consideration'>Memory consumption of Aspose writer (prevent DOS) need to checked and take under consideration</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>854060</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Remove experiment for UI report configuration'>Remove experiment for UI report configuration</div>
+      </td>
+      <td>
+         <div>Ready for R&D</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='868033 - [Tech] Remove and add Samet Experiments - Manchester'>868033 - [Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>782028</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Remove Experiment for: [DevSecOps] Add OOTB widget - Features with open critical vulnerabilities'>Remove Experiment for: [DevSecOps] Add OOTB widget - Features with open critical vulnerabilities</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='868033 - [Tech] Remove and add Samet Experiments - Manchester'>868033 - [Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>782027</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Remove Experiment for: Support Favorites in the Pipeline module'>Remove Experiment for: Support Favorites in the Pipeline module</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='868033 - [Tech] Remove and add Samet Experiments - Manchester'>868033 - [Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>782026</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Remove Experiment for: Support Favorites in the Pipeline module'>Remove Experiment for: Support Favorites in the Pipeline module</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='868033 - [Tech] Remove and add Samet Experiments - Manchester'>868033 - [Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884021</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='turn on the experiment (open the rest for document report)'>turn on the experiment (open the rest for document report)</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845121</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to filter which entities i want to see in the report (content tab)'>As an admin i would like to filter which entities i want to see in the report (content tab)</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>5</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845118</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to open report config from setting menu'>As an admin i would like to open report config from setting menu</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877141</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='turn on milestone hash experiment'>turn on milestone hash experiment</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='845216 - Add Release and Milestone to Unique Identifier for Automated Run'>845216 - Add Release and Milestone to Unique Identifier for Automated Run</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884022</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to add a title, author and generated on date to the report (Attribute tab)'>As an admin i would like to add a title, author and generated on date to the report (Attribute tab)</div>
+      </td>
+      <td>
+         <div>Ready for R&D</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845120</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='As an admin i would like to decide in which format i would like to print (grid or details) (content tab)'>As an admin i would like to decide in which format i would like to print (grid or details) (content tab)</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881026</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Generate Report - reference field in the generated  report should appear with ID+Name'>Generate Report - reference field in the generated  report should appear with ID+Name</div>
+      </td>
+      <td>
+         <div>In Progress</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>882018</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Generate Report - UI - need to change Add section instead of add entity'>Generate Report - UI - need to change Add section instead of add entity</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881027</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Generate Report - UI - sub type field should be added to the default fields for all the relevant entities'>Generate Report - UI - sub type field should be added to the default fields for all the relevant entities</div>
+      </td>
+      <td>
+         <div>Ready for QA</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>883016</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Generate Report - UI - fields section should have a clear all fields button inside of it'>Generate Report - UI - fields section should have a clear all fields button inside of it</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>2</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>866013</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeUSDiv'><span class='typeSpan'>US</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document Report] Be able to save and reuse report settings - change Experiment to On'>[Document Report] Be able to save and reuse report settings - change Experiment to On</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div>1</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='868033 - [Tech] Remove and add Samet Experiments - Manchester'>868033 - [Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878011</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeQSDiv'><span class='typeSpan'>QS</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add Rest automation - Ensure that New Automated Run is created when pipeline milestone/release is changed'>Add Rest automation - Ensure that New Automated Run is created when pipeline milestone/release is changed</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Zvi Fried</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='845216 - Add Release and Milestone to Unique Identifier for Automated Run'>845216 - Add Release and Milestone to Unique Identifier for Automated Run</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>832069</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeQSDiv'><span class='typeSpan'>QS</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add UI automation - Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>Add UI automation - Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (12.60.41)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>832071</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeQSDiv'><span class='typeSpan'>QS</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add Rest automation - Productization (permissions, performance fuze admin parameter, localization)'>Add Rest automation - Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>3</div>
+      </td>
+      <td>
+         <div>Push01 (12.60.41)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>833075</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeQSDiv'><span class='typeSpan'>QS</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add Rest automation - Link automated runs injected via pipelines to Milestones'>Add Rest automation - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Zvi Fried</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (12.60.41)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786047 - Link automated runs injected via pipelines to Milestones'>786047 - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>868033</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Tech] Remove and add Samet Experiments - Manchester'>[Tech] Remove and add Samet Experiments - Manchester</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>4</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='511008 - DevSecOps'>511008 - DevSecOps</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>787252</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document Report] Productization (permissions, performance fuze admin parameter, localization)'>[Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+      <td>
+         <div>Ready for QA</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div>15</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='793073 - Document reports'>793073 - Document reports</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877080</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Warn user before modifying the release or milestone in a pipeline'>Warn user before modifying the release or milestone in a pipeline</div>
+      </td>
+      <td>
+         <div>Design</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push02 (15.0.14)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='792067 - Testing flow'>792067 - Testing flow</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>786047</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Link automated runs injected via pipelines to Milestones'>Link automated runs injected via pipelines to Milestones</div>
+      </td>
+      <td>
+         <div>Done</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>10</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='793058 - Regression test planning'>793058 - Regression test planning</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>786205</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>[Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+      <td>
+         <div>In Progress</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div>30</div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='793073 - Document reports'>793073 - Document reports</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>845216</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeFeatureDiv'><span class='typeSpan'>F</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Add Release and Milestone to Unique Identifier for Automated Run'>Add Release and Milestone to Unique Identifier for Automated Run</div>
+      </td>
+      <td>
+         <div>Exposed</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='793058 - Regression test planning'>793058 - Regression test planning</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>854085</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Pipeline module high CPU consumption while module not in use'>Pipeline module high CPU consumption while module not in use</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>782007</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Missing navigation buttons between Pipeline Runs'>Missing navigation buttons between Pipeline Runs</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='878006 - [Pipeline UI] Add Navigation Buttons Between Pipeline Runs'>878006 - [Pipeline UI] Add Navigation Buttons Between Pipeline Runs</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>751081</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Long name in Pipeline run is cut and ellipses are missing'>Long name in Pipeline run is cut and ellipses are missing</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='755128 - [Tech] [Pipelines] UI State Refactoring to improve module Performance'>755128 - [Tech] [Pipelines] UI State Refactoring to improve module Performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>879002</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='Miss ':' in the fields in SETTINGS tab'>Miss ':' in the fields in SETTINGS tab</div>	</td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878077</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Missing Customize fields button from Pipeline details'>Missing Customize fields button from Pipeline details</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>874063</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='NullCIBuildNumber when rebuilding job twice'>NullCIBuildNumber when rebuilding job twice</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>874026</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Performance  : query on CI_BUILD take more then 18 sec in Center.'>Performance  : query on CI_BUILD take more then 18 sec in Center.</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='246004 - Pipeline area performance'>246004 - Pipeline area performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>874025</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Performance : Query on scm_commit take 17 sec in Center'>Performance : Query on scm_commit take 17 sec in Center</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='246004 - Pipeline area performance'>246004 - Pipeline area performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878003</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='No tooltip that states that there is a newer pipeline run'>No tooltip that states that there is a newer pipeline run</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>867041</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='New runs are created instead of adding previous runs to existing ones'>New runs are created instead of adding previous runs to existing ones</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='845216 - Add Release and Milestone to Unique Identifier for Automated Run'>845216 - Add Release and Milestone to Unique Identifier for Automated Run</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>885017</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='No prompt when selecting a template as default'>No prompt when selecting a template as default</div>
+      </td>
+      <td>
+         <div>Proposed Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877104</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='No scrolling option in the entities list'>No scrolling option in the entities list</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>874071</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='User without edit role can edit pipeline he created'>User without edit role can edit pipeline he created</div>
+      </td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Ohad Samet</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878126</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='When adding a lot of filed the 'Add' button almost disappears (look at the image inside)'>When adding a lot of filed the 'Add' button almost disappears (look at the image inside)</div>	</td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>867084</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='User without "Manage Document Report" cannot view shared report configuration entities.'>User without "Manage Document Report" cannot view shared report configuration entities.</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Nadav Hames</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='795008 - [Document Report] Be able to save and reuse report settings - Server'>795008 - [Document Report] Be able to save and reuse report settings - Server</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>885012</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Unsorted Fields when adding new udf'>Unsorted Fields when adding new udf</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875077</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='User with Viewer Role and CRUD permisions on Assigment Rule can see the CI Server'>User with Viewer Role and CRUD permisions on Assigment Rule can see the CI Server</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881028</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='When dragging entity (section) on another entity the 'fathom' is green although you cannot put the entity there'>When dragging entity (section) on another entity the 'fathom' is green although you cannot put the entity there</div>	</td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881010</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='When generating a report on Octane env. that runs on Linux the PDF's font is changing'>When generating a report on Octane env. that runs on Linux the PDF's font is changing</div>
+      </td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878125</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='When generating a report with No headlines of an entity ('Section header') it creates default headlines'>When generating a report with No headlines of an entity ('Section header') it creates default headlines</div>	</td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>846031</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='When generating a doc with the field 'progress' (Epic/Feature)  you get not readable report'>When generating a doc with the field 'progress' (Epic/Feature)  you get not readable report</div>	</td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='853002 - Proper representation of progress and coverage fields in the document report and excel report'>853002 - Proper representation of progress and coverage fields in the document report and excel report</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>872067</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='When Exporting to word/pdf an entity with wide table inside its description, the table is cut off'>When Exporting to word/pdf an entity with wide table inside its description, the table is cut off</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877159</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='When generatin empty  report you do not get an informative message for the failure'>When generatin empty  report you do not get an informative message for the failure</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884014</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Selecting a report template does not fill in the report generator'>Selecting a report template does not fill in the report generator</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>885018</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Setting a report template as default is saved only in that browser instance'>Setting a report template as default is saved only in that browser instance</div>
+      </td>
+      <td>
+         <div>Proposed Rejected</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878110</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='run duration displays milliseconds instead of human readable string'>run duration displays milliseconds instead of human readable string</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>814300</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Problem with exporting requirements from Octane to Excel'>Problem with exporting requirements from Octane to Excel</div>
+      </td>
+      <td>
+         <div>Planned</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>746001</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='When linking BLI to commit in Feature's BACKLOG ITEMS tab, the relevant fields in Feature's doc view is updated only after refresh'>When linking BLI to commit in Feature's BACKLOG ITEMS tab, the relevant fields in Feature's doc view is updated only after refresh</div>	</td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Orit Ifrach</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='700148 - [Commits] Manually Connecting commits to BLI's: Link commits to Stories in Story Grid'>700148 - [Commits] Manually Connecting commits to BLI's: Link commits to Stories in Story Grid</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>765016</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Single user exp: loading/scrolling backlog items grid when commit files, commits and commiters fields are visible exceeds KPI'>Single user exp: loading/scrolling backlog items grid when commit files, commits and commiters fields are visible exceeds KPI</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Yuri Guller</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>838044</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='There are times when the status for the first run of a pipeline is not updated in the bucket after the run is completed'>There are times when the status for the first run of a pipeline is not updated in the bucket after the run is completed</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786013 - [Tech] Pipeline Module Lazy Loading - performance'>786013 - [Tech] Pipeline Module Lazy Loading - performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878123</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='This message (look inside) does not disappear after a few seconds'>This message (look inside) does not disappear after a few seconds</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884015</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='The template name used to autofill is not shown at the template dropdown'>The template name used to autofill is not shown at the template dropdown</div>
+      </td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881013</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='The Drag & Drop in not symmetry from right and left side. The problem is with the left side'>The Drag & Drop in not symmetry from right and left side. The problem is with the left side</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>880010</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='The Fields are not sorted'>The Fields are not sorted</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>876131</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='little typos error in 'filtrer pipelines by release''>little typos error in 'filtrer pipelines by release'</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786047 - Link automated runs injected via pipelines to Milestones'>786047 - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>862050</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Jenkins] committer not shown in the build details'>[Jenkins] committer not shown in the build details</div>
+      </td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='389010 - Octane-Slack integration enhancements :: Slack from Pipeline'>389010 - Octane-Slack integration enhancements :: Slack from Pipeline</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>833059</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[L10N-truncation]string“There are 6 new runs in this pipeline.” are truncated in JAN / FRA /ESP ENV.'>[L10N-truncation]string“There are 6 new runs in this pipeline.” are truncated in JAN / FRA /ESP ENV.</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='265137 - UI Localization (L10N) Support'>265137 - UI Localization (L10N) Support</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>885030</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Permissions] Tester can create and edit SCM users'>[Permissions] Tester can create and edit SCM users</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884012</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document report] Add section drop-down list elements not sorted'>[Document report] Add section drop-down list elements not sorted</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884002</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document report] Buttons for adding Fields and Filters are different one to the other'>[Document report] Buttons for adding Fields and Filters are different one to the other</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>876032</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[I18N][Garbled-text]Garbled text exist in exported PDF file for requirement'>[I18N][Garbled-text]Garbled text exist in exported PDF file for requirement</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>831022</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Samet_XMEN_Liverpool_Push2] Green "Test" tag does not appear on the top corner of root job if Testing Environment is set in Topology tab for a pipeline'>[Samet_XMEN_Liverpool_Push2] Green "Test" tag does not appear on the top corner of root job if Testing Environment is set in Topology tab for a pipeline</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>830010</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Samet_XMEN_Liverpool_Push2] In automated run details tab, "Linked Defect" field value does not link to the defect'>[Samet_XMEN_Liverpool_Push2] In automated run details tab, "Linked Defect" field value does not link to the defect</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>604005</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[To Fix] [L10N][Truncation] truncation issue in Pipelines Topologie UI'>[To Fix] [L10N][Truncation] truncation issue in Pipelines Topologie UI</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='265137 - UI Localization (L10N) Support'>265137 - UI Localization (L10N) Support</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>821030</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Regression - Liverpool Push1]  Long name for a pipeline is not displayed properly in Pipeline docview'>[Regression - Liverpool Push1]  Long name for a pipeline is not displayed properly in Pipeline docview</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>778029</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Regression Juventus Push02] Scroll to right button is not disabled when there are no more pipelines to be displayed in toolbar'>[Regression Juventus Push02] Scroll to right button is not disabled when there are no more pipelines to be displayed in toolbar</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>730048</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Regression Push 3 12.60.21] The label color of a pipeline is changed if the view is switched from Tree to Flat'>[Regression Push 3 12.60.21] The label color of a pipeline is changed if the view is switched from Tree to Flat</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>868095</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='"order_by" attribute accepts any value'>"order_by" attribute accepts any value</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nadav Hames</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='795008 - [Document Report] Be able to save and reuse report settings - Server'>795008 - [Document Report] Be able to save and reuse report settings - Server</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>838049</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='#Latest option in navigation dropdown list is not always kept'>#Latest option in navigation dropdown list is not always kept</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786013 - [Tech] Pipeline Module Lazy Loading - performance'>786013 - [Tech] Pipeline Module Lazy Loading - performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875137</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title=''Designer' field in Test Suite -> test tab is wired printed'>'Designer' field in Test Suite -> test tab is wired printed</div>	</td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='755105 - [Document Report] Export grid of defects to Word (plain grid, no extras, export visible columns, according to filter), user gets notification when ready'>755105 - [Document Report] Export grid of defects to Word (plain grid, no extras, export visible columns, according to filter), user gets notification when ready</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>861056</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='"Assignment Rule" button is not responding'>"Assignment Rule" button is not responding</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>864039</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='"failed before class" test failures should be injected with a dedicated status'>"failed before class" test failures should be injected with a dedicated status</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='878010 - [Test Injection] Failed Before Class Should ensure that all tests in the class fail'>878010 - [Test Injection] Failed Before Class Should ensure that all tests in the class fail</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>867085</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='"group_by" attribute cannot get any value'>"group_by" attribute cannot get any value</div>
+      </td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nadav Hames</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='795008 - [Document Report] Be able to save and reuse report settings - Server'>795008 - [Document Report] Be able to save and reuse report settings - Server</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>884011</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document report ]First element in Add Section drop-down list  always highlighted'>[Document report ]First element in Add Section drop-down list  always highlighted</div>
+      </td>
+      <td>
+         <div>Proposed Rejected</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875072</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document Report] - filter doesn't take subtypes into acount'>[Document Report] - filter doesn't take subtypes into acount</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>883004</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Document Report] - generated report  TOC font is wrong'>[Document Report] - generated report  TOC font is wrong</div>
+      </td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>854101</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title=''Subtype' fields in all entities should be displayed as in grid and not with an underscore'>'Subtype' fields in all entities should be displayed as in grid and not with an underscore</div>	</td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)'>787252 - [Document Report] Productization (permissions, performance fuze admin parameter, localization)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>787170</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[CENTER] Branch information is missing in the Repositories field of a commit'>[CENTER] Branch information is missing in the Repositories field of a commit</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>848034</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='[Center] Test name is displayed twice  for automated run if MR is also present in details pane for last test runs in fat line view'>[Center] Test name is displayed twice  for automated run if MR is also present in details pane for last test runs in fat line view</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>885015</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Exception when saving empty template'>Exception when saving empty template</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>863032</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Favorite icon is not correctly displayed in Pipelines menu'>Favorite icon is not correctly displayed in Pipelines menu</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>880002</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Fileds In Topology tab of a Pipeline --> configuration Dialog --> TEST FIELDS tab  are not aligned'>Fileds In Topology tab of a Pipeline --> configuration Dialog --> TEST FIELDS tab  are not aligned</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877116</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='error on missing milestone field on nav to runs tab in pipeline doc view'>error on missing milestone field on nav to runs tab in pipeline doc view</div>
+      </td>
+      <td>
+         <div>Duplicate</div>
+      </td>
+      <td>
+         <div>Critical</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>877082</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='Error when filter pipelines by milestone and then turning off the  'link_test_run_to_milestone' experiment'>Error when filter pipelines by milestone and then turning off the  'link_test_run_to_milestone' experiment</div>	</td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Critical</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786047 - Link automated runs injected via pipelines to Milestones'>786047 - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>882049</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Exception dialog appears when trying to drag and drop the single Field remained'>Exception dialog appears when trying to drag and drop the single Field remained</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>878068</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Increase max length (currently 255) of scm-commit message (comment)'>Increase max length (currently 255) of scm-commit message (comment)</div>
+      </td>
+      <td>
+         <div>Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>726028</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Link to Vulnerability navigate you into Vulnerability doc view when have no permission'>Link to Vulnerability navigate you into Vulnerability doc view when have no permission</div>
+      </td>
+      <td>
+         <div>Opened</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='644078 - [DevSecOps] [Data Visibility] Data visibility for Vulnerabilities per role'>644078 - [DevSecOps] [Data Visibility] Data visibility for Vulnerabilities per role</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875050</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='link_commit_to_story_manually still present'>link_commit_to_story_manually still present</div>
+      </td>
+      <td>
+         <div>Fixed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='781001 - [Tech] Remove and add Samet Experiments - Munich'>781001 - [Tech] Remove and add Samet Experiments - Munich</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>754052</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='If Filter by Release is active and a new pipeline is created in that release, it is not displayed in pipeline toolbar'>If Filter by Release is active and a new pipeline is created in that release, it is not displayed in pipeline toolbar</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='755128 - [Tech] [Pipelines] UI State Refactoring to improve module Performance'>755128 - [Tech] [Pipelines] UI State Refactoring to improve module Performance</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>848035</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='In 'Add Pipeline' Dialog, custom brunch type has '_' in its name (see image inside)'>In 'Add Pipeline' Dialog, custom brunch type has '_' in its name (see image inside)</div>	</td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Daniel Shmaya</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='617033 - [Pipelines] Continuation of Compare Test Failures Between Pipeline runs( POC / TP)'>617033 - [Pipelines] Continuation of Compare Test Failures Between Pipeline runs( POC / TP)</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881055</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='In Automatic Runs, the duration field should show time in HH:MM:SS.sss format'>In Automatic Runs, the duration field should show time in HH:MM:SS.sss format</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>849044</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Automated run document view - Milestone should come right after Release in the default form'>Automated run document view - Milestone should come right after Release in the default form</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875094</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Automated Runs don't appear in Test tab when running a pipeline in prod environment'>Automated Runs don't appear in Test tab when running a pipeline in prod environment</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>853079</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Automated test failed: setTestFieldsOnPipeline[MT #191074][OCD Samet]'>Automated test failed: setTestFieldsOnPipeline[MT #191074][OCD Samet]</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>549047</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>	  <div class='nameDiv' title='[To Fix] [tech] move test related modules of 'mqm-test-box' out of the main application code'>[To Fix] [tech] move test related modules of 'mqm-test-box' out of the main application code</div>	</td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Yamin Hijazi</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>848128</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='After adding release on Pipeline filter the Milestone filter changes position'>After adding release on Pipeline filter the Milestone filter changes position</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786047 - Link automated runs injected via pipelines to Milestones'>786047 - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881015</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='An Exception is thrown When trying to add the same entity to the tree'>An Exception is thrown When trying to add the same entity to the tree</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Critical</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>876006</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Copy of Milestone field on pipeline should be off according to experiment: link_test_run_to_milestone'>Copy of Milestone field on pipeline should be off according to experiment: link_test_run_to_milestone</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786047 - Link automated runs injected via pipelines to Milestones'>786047 - Link automated runs injected via pipelines to Milestones</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>880001</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Dialog name should be written as: "Generate document report" (just first word with a capital letter)'>Dialog name should be written as: "Generate document report" (just first word with a capital letter)</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>Low</div>
+      </td>
+      <td>
+         <div>Ohad Samet</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881016</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Drag and Drop does not work on Firefox browser'>Drag and Drop does not work on Firefox browser</div>
+      </td>
+      <td>
+         <div>New</div>
+      </td>
+      <td>
+         <div>Critical</div>
+      </td>
+      <td>
+         <div>Moshe Golan</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity'>786205 - [Document Report] Define report settings that include flat entities, filter, sorted fields and presentation mode for each entity</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>876125</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='commit injection in pipeline run failed because of commit message length been longer than 255 characters'>commit injection in pipeline run failed because of commit message length been longer than 255 characters</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>881040</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Commit name is not displayed if longer than 223 characters'>Commit name is not displayed if longer than 223 characters</div>
+      </td>
+      <td>
+         <div>Proposed Rejected</div>
+      </td>
+      <td>
+         <div>Medium</div>
+      </td>
+      <td>
+         <div>Elena Fradkin</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div>Push01 (15.0.8)</div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+   <tr onclick='trClicked(this);'>
+      <td class='idTD'>
+         <div>875008</div>
+      </td>
+      <td class='typeTD'>
+         <div class='typeDiv typeDefectDiv'><span class='typeSpan'>D</span></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='Copy of "Reg_Munich_Push3" Cannot filter Pipeline with Tester/Viewer only role'>Copy of "Reg_Munich_Push3" Cannot filter Pipeline with Tester/Viewer only role</div>
+      </td>
+      <td>
+         <div>Closed</div>
+      </td>
+      <td>
+         <div>High</div>
+      </td>
+      <td>
+         <div>Nir Yom Tov</div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div></div>
+      </td>
+      <td>
+         <div class='nameDiv' title='1001 - Requirement Backlog'>1001 - Requirement Backlog</div>
+      </td>
+   </tr>
+</tbody>
+<script type="text/javascript">
+            function calcRowAmount() {
+var allDivs =  document.getElementsByClassName('groupByDiv');
+if(allDivs){
+  for (var i=0;i<allDivs.length;i++) {
+    console.log('aaa: ' + allDivs[i].id);
+   var rowCount = document.getElementsByClassName(allDivs[i].id);
+   var count=rowCount[0].getElementsByTagName('tr').length;
+              console.log(count);
+    var elem = document.getElementById(allDivs[i].id);
+    if (elem && !(elem.getAttribute('originalText'))){
+      elem.setAttribute('originalText', elem.innerHTML);
+    }
+  document.getElementById(allDivs[i].id).innerHTML +=(' ('+count+')');
+    console.log(document.getElementById(allDivs[i].id).getAttribute('originalText'));
+  }
+}
+}
+            calcRowAmount();
+            calcRowAmount();
+</script>
+</table>
+<div id='panelDiv' class='panelDiv'>
+    <div id='dragBtn' class='dragBtn' onmousedown='changeHeight(true);' onmouseup='changeHeight(false);'>v</div>
+  </div>
+</div>
+<div id='hiddenDiv' class='hiddenDiv'></div>
